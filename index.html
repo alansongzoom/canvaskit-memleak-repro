@@ -1,6 +1,54 @@
-<!DOCTYPE html>
-<html>
-    <body>
-        <h1>Hello world</h1>
-    </body>
-</html>
+<body>
+    <script type="text/javascript" src="https://unpkg.com/canvaskit-wasm@0.39.1/bin/canvaskit.js"></script>
+    <script type="text/javascript">
+      const ckLoaded = CanvasKitInit({
+        locateFile: (file) => "https://unpkg.com/canvaskit-wasm@0.39.1/bin/" + file,
+      });
+
+      /* Fonts that cause memleak when used with `fontVariations` */
+
+      // From https://github.com/notofonts/noto-cjk/blob/main/Sans/OTC/NotoSansCJK-Regular.ttc
+      const fontLoaded = fetch("./NotoSansCJK-Regular.ttc").then((response) => response.arrayBuffer());
+      // From https://github.com/adobe-fonts/source-han-sans/releases -> Variable OTF/TTF/OTC/WOFF2
+      // const fontLoaded = fetch("./SourceHanSans-VF.otf.woff2").then((response) => response.arrayBuffer());
+
+      /* Font that works fine when `fontVariations` is passed */
+      // const fontLoaded = fetch("https://storage.googleapis.com/skia-cdn/misc/Roboto-Regular.ttf").then((response) => response.arrayBuffer());
+
+      const p = document.createElement("p");
+      document.body.append(p);
+
+      p.innerText = "Loading...";
+  
+      async function main() {
+        const [CanvasKit, font] = await Promise.all([ckLoaded, fontLoaded]);
+        window.CanvasKit = CanvasKit;
+        const fontProvider = CanvasKit.TypefaceFontProvider.Make();
+        fontProvider.registerFont(font, "SomeFont");
+
+        // Repeatedly create a builder and use it to generate a paragraph, and then delete the builder and paragraph
+        // If there's no memleak, the JS heap size would remain ~150MB, when there is, it could be as high as 2GB
+        for (let i = 0; i < 500; i++) {
+          const builder = CanvasKit.ParagraphBuilder.MakeFromFontProvider(new CanvasKit.ParagraphStyle({ textStyle: {} }), fontProvider);
+  
+          builder.pushStyle(
+            new CanvasKit.TextStyle({
+              fontFamilies: ["SomeFont"],
+              fontVariations: [{ axis: "wght", value: 700 }], // required to reproduce the mem leak
+            })
+          );
+  
+          builder.addText("test"); // required to reproduce the mem leak
+          const paragraph = builder.build(); // required to reproduce the mem leak
+          paragraph.layout(200); // required to reproduce the mem leak
+  
+          paragraph.delete();
+          builder.delete();
+        }
+        
+        p.innerText = `Use Devtools "Memory" tab to take heap snapshot`;
+      }
+      main();
+    </script>
+  </body>
+  
