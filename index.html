@@ -1,8 +1,8 @@
 <body>
-    <script type="text/javascript" src="https://unpkg.com/canvaskit-wasm@0.39.1/bin/canvaskit.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/canvaskit-wasm@0.39.1/bin/profiling/canvaskit.js"></script>
     <script type="text/javascript">
       const ckLoaded = CanvasKitInit({
-        locateFile: (file) => "https://unpkg.com/canvaskit-wasm@0.39.1/bin/" + file,
+        locateFile: (file) => "https://unpkg.com/canvaskit-wasm@0.39.1/bin/profiling/" + file,
       });
 
       /* Fonts that cause memleak when used with `fontVariations` */
